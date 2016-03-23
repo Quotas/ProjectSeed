@@ -1,0 +1,330 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="UTF-8" />
+        <title>Filler Title</title>
+        <script src="phaser.js"></script>
+	    <script type="text/javascript">
+
+
+
+					var game = new Phaser.Game(320, 480, Phaser.AUTO, "game", {preload: preload, create: create, render: render, update:update}, true);
+                    var eventToggled = false;
+                    var endtime;
+                    var goaltime = 0;
+                    var starttime;
+                    var goaltimer;
+                    var updatetimer;
+                    var treetimer;
+                    var total = 0;
+                    var titleText;
+                    var goalText;
+                    var helpText;
+                    var goalString = '';
+                    var goalmet = false;
+                    var goalstarted = false;
+                    var treeage = 0;
+                    var minusButton;
+                    var addButton;
+                    var startButton;
+                    var helpButton;
+                    var backButton;
+                    var backButtonText;
+                    var treeImage;
+                    var active;
+                    var treeanim;
+                    var feedbackstring;
+                    var feedbackText;
+                    var togglefeedback = false;
+                    var helpvisible = false;
+
+
+                    //This is a built in phaser function that is called first and loads all the game assets, ideally this will set the size as well but currently its bugged and I dont know the fix
+                    function preload(){
+                        game.load.atlasXML('redbutton', 'assests/Spritesheet/Redsheet.png', 'assests/Spritesheet/Redsheet.xml');
+                        game.load.spritesheet('tree', 'assests/Spritesheet/treeSheet.png', 271, 249, 57);
+                        game.load.image("play","assests/PNG/red_button00.png");
+                        game.load.image("minusButton", "assests/PNG/red_sliderLeft.png");
+                        game.load.image("addButton", "assests/PNG/red_sliderRight.png");
+                        game.scale.scaleMode = Phaser.ScaleManager.USER_SCALE;
+                        game.scale.pageAlignHorizontally = true;
+                        game.scale.updateLayout();
+                    }
+
+                    //The create function is built in to phaser, this is called after the preload function and controls the creation of our 
+                    //asset objects
+                    function create(){ 
+                        game.stage.backgroundColor = '#C6D618'; 
+                        
+                        titleText = game.add.text(game.world.centerX  , game.world.centerY / 2, "Project Seed", { font: '24px Arial', fill: '#FFA500' });
+                        titleText.anchor.setTo(0.5, 0.5);
+                        titleText.stroke = '#000000';
+                        titleText.strokeThickness = 4;
+                        
+                        goalText = game.add.text(game.world.centerX  , game.world.centerY, goaltime, { font: '24px Arial', fill: '#FFA500' });
+                        goalText.anchor.setTo(0.5, 0.5);
+                        goalText.stroke = '#000000';
+                        goalText.strokeThickness = 3;
+
+
+                        helpText = game.add.text(game.world.centerX  , game.world.centerY, "The application is used by clicking the left arrow button, or right arrow button to change the time. Once you set the time you want, you can press the start button and view the growing page.  Click anywhere to leave the growing page, then the Report page to return to the start page.", { font: '21px Arial', fill: '#FFA500', wordWrap: true, wordWrapWidth: 300 });
+                        helpText.anchor.setTo(0.5, 0.55);
+                        helpText.stroke = '#000000';
+                        helpText.strokeThickness = 3;
+                        helpText.visible = false;
+
+
+                        feedbackText = game.add.text(game.world.centerX  , game.world.centerY, 'Test', { font: '24px Arial', fill: '#FFA500', wordWrap: true, wordWrapWidth: 300});
+                        feedbackText.anchor.setTo(0.5);
+                        feedbackText.visible = false;
+                        feedbackText.stroke = '#000000';
+                        feedbackText.strokeThickness = 3;
+
+
+                        minusButton = game.add.button(game.world.centerX - 80, game.world.centerY, "minusButton", minusGoal, 1, 0);
+                        addButton = game.add.button(game.world.centerX + 80, game.world.centerY, "addButton", addGoal, 1, 0);
+                        minusButton.anchor.setTo(0.5, 0.5);
+                        addButton.anchor.setTo(0.5, 0.5);
+
+                        treeImage = game.add.sprite(game.world.centerX , game.world.centerY, 'tree', 0);
+                        treeImage.smoothed = false;
+                        treeImage.anchor.setTo(0.5, 0.5);
+                        treeImage.visible = false;
+
+
+                        startButton = game.add.button(160 , 360, "redbutton", setGoal, this, 'red_button00.png', 'red_button01.png', 'red_button02.png');
+                        buttonText = game.add.text(165, 360, "Start", { font: '18px Arial', fill: '#fff' });
+                        buttonText.anchor.setTo(0.5, 0.5);
+                        startButton.anchor.setTo(0.5,0.5);
+
+                        helpButton = game.add.button(160 , 410, "redbutton", toggleHelp, this, 'red_button00.png', 'red_button01.png', 'red_button02.png');
+                        helpbuttonText = game.add.text(165, 410, "Help", { font: '18px Arial', fill: '#fff' });
+                        helpbuttonText.anchor.setTo(0.5, 0.5);
+                        helpButton.anchor.setTo(0.5,0.5);
+
+                        backButton = game.add.button(160 , 410, "redbutton", toggleHelp, this, 'red_button00.png', 'red_button01.png', 'red_button02.png');
+                        backButtonText = game.add.text(165, 410, "Back", { font: '18px Arial', fill: '#fff' });
+                        backButtonText.anchor.setTo(0.5, 0.5);
+                        backButton.anchor.setTo(0.5,0.5);
+                        backButton.visible = false;
+                        backButtonText.visible = false;
+
+                        updatetimer = game.time.create(false);
+                        goaltimer = game.time.create(false);
+                        treetimer = game.time.create(false);
+
+
+                    }
+
+
+                    //This is the minus button callback function that simply subtracts one from our goaltime if goaltime is a postive number
+                    //That is greater than zero, otherwise it prints an error.
+                    function minusGoal(){
+                        if (goaltime > 0){
+                            goaltime--;
+                        }
+                        else{
+                            alert("goaltime cant be less than zero");
+                        }
+                    }
+
+                    //This is our add button callback function and simply adds one to the goaltime per press
+                    function addGoal(){
+
+                        goaltime++;
+                    }
+
+                    function toggleHelp(){
+                        if (helpvisible || togglefeedback){
+                            helpvisible = false;
+                            togglefeedback = false;
+                            total = 0;
+                        }
+                        else{
+                            helpvisible = true;
+                        }
+
+                        
+                    }
+
+                    //This is the play button callback function that starts our event timers and sets our goaltime
+                    function setGoal(){
+                        updatetimer.loop(1000, updateCounter, this);
+                        treetimer.loop(1000, updateTree, this);
+                        
+                        updatetimer.start();
+                        treetimer.start();
+
+                        //goaltimer.loop(goaltime * 60 * 1000, endGoal, this);
+                        //goaltimer.start();
+
+                        goalstarted = true;
+
+
+                    }
+
+                    //This function updateCounter is called every second, but should be called every ms and updates the tree age every second
+                    function updateCounter(){
+                        if (total % 60 == 0 && total > 0){
+                            treeage++;
+                        }
+                        total += 10;
+                    }
+
+                    //This function is called when our goal is over, it controls our event timers
+                    //This resets our total time and goalstarted state to their default values, 0 and false respectively
+                    function endGoal(){
+
+                        goaltimer.stop();
+                        updatetimer.stop();
+                        treetimer.stop();
+                        goalstarted = false;
+                        toggleEventListenerOff();
+                        togglefeedbackOn();
+                    }
+
+                    //The updateTree function gets called once every second by our treetimer event
+                    //Its this functions job to update the plant picture, this just simply replaces the texture
+                    //Refactoring this so that each tree is a seperate sprite would greatly increase the functionality
+                    //Would also allow tweening to make it slightly prettier 
+                    function updateTree(){
+                        treeImage.frame = treeage;
+                        
+                    }
+
+                    //The update function is also called at exactly 60 times a second, does two checks
+                    //The first check is to roll our goaltext over 10 otherwise it adds a zero to the front of the goaltext
+                    //So we get text like '06' for numbers under two digits
+                    //Second it controls the visability of certain elemenets based on the goalstarted state
+                    function toggleEventListenerOn(){
+                        document.addEventListener('click', endGoal);
+                        console.log('event toggled on');
+                        eventToggled = true;
+
+                    }
+
+                    function toggleEventListenerOff(){
+                        document.removeEventListener('click', endGoal);
+                        console.log('event toggled off');
+                        eventToggled = false;
+
+                    }
+
+                    function togglefeedbackOn(){
+                        togglefeedback = true;
+                        treeImage.visible = false;
+                        feedbackText.visble = true;
+                        //feedbackText.setText("You lasted for: " + total + " seconds.");
+                        if (goaltime * 60 == total){
+                            feedbackText.setText("Congradulations you have achevied you goal!")
+                        }
+                        else if(goaltime * 60 < total){
+                            feedbackText.setText(" Congradulations you have surpassed your goal by " + (total - goaltime * 60) + " seconds");
+                        }
+                        else if(goaltime * 60 > total){
+                            feedbackText.setText("Sadly, you  only lasted for: " + total + " seconds - and didnt not reach your goal of " + goaltime + " minute(s).");
+                        }
+                        backButton.visible = true;
+                        backButtonText.visible = true;
+                        goaltime = 0;
+
+
+
+                    }
+                    function update(){
+                        if (goaltime >= 10){
+
+                            goalText.setText(goaltime);
+                        }
+                        else{
+
+                            goalText.setText("0" + goaltime);
+                        }
+
+                        //Hide our buttons and stuff if a goal has started
+                        if (goalstarted || helpvisible || togglefeedback){
+                            titleText.visible = false;
+                            goalText.visible = false;
+                            minusButton.visible = false;;
+                            addButton.visible = false;
+                            startButton.visible = false;
+                            buttonText.visible = false;
+                            helpButton.visible = false;
+                            helpbuttonText.visible = false;
+                            if (goalstarted){
+                                treeImage.visible = true;
+                                if(!eventToggled){
+                                    toggleEventListenerOn();    
+                                }
+                                
+
+                            }
+                            else if(helpvisible){
+                                helpText.visible = true;
+
+                                backButtonText.visible = true;
+                                backButton.visible = true;
+                            }
+                            else if(togglefeedback){
+                                feedbackText.visible = true;
+                            }
+
+                            
+                        }
+                        //Make it visable again if the goal has ended
+                        else{
+                            titleText.visible = true;
+                            goalText.visible = true;
+                            minusButton.visible = true;
+                            addButton.visible = true;
+                            startButton.visible = true;
+                            buttonText.visible = true;
+                            helpButton.visible = true;
+                            helpbuttonText.visible = true;
+
+                            treeImage.visible = false;
+                            helpText.visible = false;
+                            backButtonText.visible = false;
+                            backButton.visible = false;
+                            feedbackText.visible = false;
+
+                        }
+
+                    }
+
+
+                    //Render function is called at 60 times a second we can use this to draw debug text, but this is
+                    //A very hackish way to do things in refactoring should really create a text object in our create function
+                    function render() {
+                        //game.debug.text('Seconds since start: ' + total, 32, 64);
+                        //game.debug.text('Goaltime : ' + goaltime, 32, 80);
+
+                    }
+
+                    //Add an event listener for if the tab is not active - if it is not then call our endGoal function
+                    document.addEventListener('visibilitychange', function(){
+                        endGoal(); 
+                    })
+
+
+
+
+
+	    </script>	
+    </head>
+    <body>
+    	<div id="game"></div>
+    </body>
+</html>
+
+<style>
+#game{
+    background-color: #C6D618;
+    border-size:2px;
+    border-style:solid;
+    border-color:black;
+
+
+}
+</style>
+
